@@ -18,3 +18,5 @@ The project is based on https://developers.google.com/sheets/api/quickstart/go
 * (paste in the starter code)
 * go mod tidy
 * go run .
+* follow link to authorize app
+* when redirected to a broken local host, check url parameters to find "code"
