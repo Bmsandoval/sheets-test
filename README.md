@@ -5,4 +5,5 @@ export GO111MODULE=on # to fix "io/fs: package io/fs is not in GOROOT (/usr/loca
 go get google.golang.org/api/sheets/v4
 go get golang.org/x/oauth2/google
 (paste in the starter code)
-go run sheets-test
+go mod tidy
+go run .
