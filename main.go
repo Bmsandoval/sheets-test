@@ -92,9 +92,7 @@ func main() {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
 
-	// Prints the names and majors of students in a sample spreadsheet:
-	// https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-	spreadsheetId := "1h_kGGAw5Q4lcox9zLwWqYD662DUlWcuU86GSgbF8g1Q"
+	spreadsheetId := "1-BbVqEarGoeDOE2StmgbEeUq4TGPgWKOu6BcdUg_mdo"
 	readRange := "AllLoans!A2:G"
 	resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 	if err != nil {
@@ -236,25 +234,52 @@ func main() {
 	}
 	dateTracker = earliestStart
 
+	columns := make([][]interface{}, 1+len(LoanInfos))
+	for i, _ := range columns {
+		columns[i] = []interface{}{}
+	}
+
 	headers := "date, "
+	columns[0] = append(columns[0], "date")
 	// loop loan info to maintain consistent order
-	for _, v := range LoanInfos {
+	for i, v := range LoanInfos {
 		headers += v.Name + ", "
+		columns[i+1] = append(columns[i+1], fmt.Sprintf("%s balance", v.Name))
 	}
 	fmt.Println()
 	fmt.Println(headers)
+
 	for {
 		if _, ok := resultData[dateTracker]; !ok {
 			break
 		}
 
 		row := fmt.Sprint(dateTracker.Format("1/2/2006"), ", ")
+		columns[0] = append(columns[0], dateTracker.Format("1/2/2006"))
 		// loop loan info to maintain consistent order
 		for i := 0; i < len(LoanInfos); i++ {
 			row += fmt.Sprintf("%f, ", resultData[dateTracker][i])
+			columns[i+1] = append(columns[i+1], resultData[dateTracker][i])
 		}
 		fmt.Println(row)
 		dateTracker = dateTracker.AddDate(0, 1, 0)
+	}
+
+	var vr sheets.ValueRange
+
+	// start writing at column 'I' and work to the right
+	writeRange := fmt.Sprintf("AllLoans!%s1:%s%d", string('I'), string('I'+int32(len(columns))), len(columns[0])+1)
+	for i := 0; i < len(columns[0]); i++ {
+		var row []interface{}
+		for j := 0; j < len(columns); j++ {
+			row = append(row, columns[j][i])
+		}
+		vr.Values = append(vr.Values, row)
+	}
+
+	_, err = srv.Spreadsheets.Values.Update(spreadsheetId, writeRange, &vr).ValueInputOption("RAW").Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve data from sheet. %v", err)
 	}
 }
 
